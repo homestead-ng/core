@@ -1,0 +1,7 @@
+baseURL = 'http://localhost:1313/'
+locale = 'en-us'
+title = 'Household ERP'
+disableKinds = ['taxonomy', 'term', 'RSS']
+
+[security]
+allowContent = ['^text/html$', '^text/markdown$']

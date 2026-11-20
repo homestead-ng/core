@@ -1,0 +1,102 @@
++++
+title = 'Household ERP: Product Concept'
+weight = 10
++++
+<h1>Household ERP</h1>
+<p><strong>Working concept, for discussion.</strong> This is a rough starting
+point for exploring a self-hosted, shared workspace for the systems that keep a
+household running: money, purchasing, supplies, meals, maintenance, schedules,
+and important records. It is intentionally broad and incomplete. Nothing here
+is a final product scope, schedule, or implementation decision.</p>
+
+<h2>Ideas to explore</h2>
+<ul>
+  <li><strong>Shared household picture:</strong> Household members can work
+    from common information rather than disconnected personal copies.</li>
+  <li><strong>Connected responsibilities:</strong> Information in one area
+    could help with another, such as a meal plan identifying supplies to buy.</li>
+  <li><strong>Deliberate spending:</strong> Non-routine purchases could have a
+    thoughtful request and approval path, while ordinary restocking stays easy.</li>
+  <li><strong>Household ownership:</strong> Self-hosting and understandable data
+    handling are early product values to examine.</li>
+  <li><strong>Useful at home and away:</strong> The Go backend and WebUI in
+    this repository are the primary application. A native Android companion is
+    a later client for quick interactions on the move.</li>
+</ul>
+
+<h2>Possible areas</h2>
+<p>These are candidate areas, not a settled module list. Some may be out of
+scope, combined, or reordered as the product becomes clearer.</p>
+<ol>
+  <li><strong>Finance and budgeting:</strong> Give income and account balances
+    purposes, plan for irregular expenses, and understand committed as well as
+    already-spent funds.</li>
+  <li><strong>Purchasing and approvals:</strong> Capture a purchase idea, apply
+    household rules, request another member's decision when appropriate, and
+    organize approved purchases for a shopping trip.</li>
+  <li><strong>Inventory and pantry:</strong> Track useful supplies by storage
+    area, surface low stock, and help members use perishable items in time.</li>
+  <li><strong>Meals and recipes:</strong> Plan meals from shared recipes,
+    compare ingredient needs with available stock, and account for preparation.</li>
+  <li><strong>Assets and maintenance:</strong> Keep household and vehicle
+    information, service history, and recurring maintenance work together.</li>
+  <li><strong>Tasks, projects, and calendar:</strong> Coordinate chores,
+    household projects, appointments, and recurring routines across members.</li>
+  <li><strong>Records and continuity:</strong> Organize important documents,
+    care information, and emergency procedures with appropriate privacy.</li>
+</ol>
+
+<h2>Example interactions</h2>
+<h3>Meal planning and restocking</h3>
+<p>A member plans meals for the week. The household compares ingredient needs
+with pantry stock, creates a shopping list for shortages, and updates budget and
+inventory when purchases are recorded.</p>
+<h3>Purchase request and follow-through</h3>
+<p>A member requests a non-routine item against a planned spending category. A
+household rule determines whether it can proceed or needs another member's
+review. An approved request reserves room in the plan until the purchase is
+recorded or the request is closed.</p>
+<h3>Maintenance and replenishment</h3>
+<p>A scheduled maintenance task is completed and recorded against a household
+asset. Parts used could reduce tracked stock and prompt a restocking task when
+supplies run low.</p>
+
+<h2>One possible way to group the work</h2>
+<p>This is a conversation aid, not a roadmap or commitment about sequence.</p>
+<ol>
+  <li>Explore a small finance and purchasing workflow, including household
+    review, committed-spend visibility, and basic shopping lists.</li>
+  <li>Explore receipt capture and basic inventory, including human review of
+    unfamiliar store descriptions.</li>
+  <li>Explore recipe, meal, and supply planning based on what is already on hand.</li>
+  <li>Consider maintenance, tasks, projects, calendars, and sensitive family
+    records after their needs and boundaries are better understood.</li>
+</ol>
+
+<h2>Questions for refinement</h2>
+<ul>
+  <li>Which household problem is worth solving first, and for whom?</li>
+  <li>What is the smallest useful first version, and what should it explicitly leave out?</li>
+  <li>How should household membership, roles, permissions, and personal privacy work?</li>
+  <li>What do budgeting, committed spending, transaction handling, and reconciliation mean to the household?</li>
+  <li>What data must be exportable, how should backups work, and how should sensitive records be protected?</li>
+  <li>What should mobile use, offline access, notifications, and external calendar connections feel like?</li>
+</ul>
+<h2>Current repository boundary</h2>
+<p><strong>Owner direction, 2026-11-19:</strong> This repository is for the Go
+backend and primary WebUI. The Android companion will live in a separate
+repository after the API contract is sufficiently defined and a usable main-app
+prototype is available to develop against. This establishes client and repo
+sequencing; it does not approve the domain scope or feature behavior.</p>
+<p><strong>Owner direction, 2026-11-19:</strong> The first prototype should
+explore a two-adult household, envelopes and allocation, purchase requests,
+approval or rejection by the other member, and reserved funds. Google OIDC is
+the chosen sign-in direction. SimpleFIN Bridge plus CSV/OFX import are the
+initial bank-data direction; Plaid is a later option. Imported transactions can
+be split across envelopes, with suggested purchase-request matches requiring
+member confirmation.</p>
+<p>Details remain open: data model, currency, exact OIDC/session flow, account
+connection ownership and cost, request lifecycle, transaction edge cases, and
+API routes and payloads. The draft <code>CORE</code> contract records owner
+choices and candidate behavior for review; its proposed requirements are not
+blanket approval for implementation.</p>
