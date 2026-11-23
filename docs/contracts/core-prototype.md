@@ -63,9 +63,9 @@ identity must not access household data.
 authenticated member's household membership. A client-supplied household or
 resource ID is not proof of access. The initial prototype has two adult members;
 roles beyond this case and membership in multiple households remain out of scope.
-The owner selected a single-use invite link for the second member. Expiration,
-revocation, email binding, and acceptance by a specific Google identity remain
-open.
+The owner selected a single-use invite link for the second member, valid seven
+days and bound to the partner's intended verified Google email. The link does
+not itself authenticate or grant access before that identity check.
 
 ### CORE-004: Envelope Amounts
 
@@ -129,13 +129,16 @@ Candidate routes for review:
 | `POST` | `/api/v1/households` | Create the household |
 | `POST` | `/api/v1/household-invitations` | Create a single-use invite |
 | `POST` | `/api/v1/household-invitations/accept` | Accept an invite |
+| `GET` | `/api/v1/accounts` | List linked accounts and budget status |
+| `PUT` | `/api/v1/accounts/{id}/budget-status` | Include/exclude account from budget |
+| `POST` | `/api/v1/budget/start` | Capture opening balances and start the budget |
 | `GET`, `POST` | `/api/v1/envelopes` | List or create envelopes |
 | `PUT` | `/api/v1/envelopes/{id}/allocation` | Set an envelope allocation |
 | `GET`, `POST` | `/api/v1/purchase-requests` | List or submit requests |
 | `POST` | `/api/v1/purchase-requests/{id}/approve` | Approve a request |
 | `POST` | `/api/v1/purchase-requests/{id}/reject` | Reject a request |
 | `POST` | `/api/v1/bank-connections/simplefin` | Exchange a Setup Token |
-| `POST` | `/api/v1/bank-connections/{id}/sync` | Request a provider sync |
+| `POST` | `/api/v1/bank-connections/{id}/sync` | Manually request a provider sync |
 | `POST` | `/api/v1/transactions/imports` | Import CSV/OFX data |
 | `GET` | `/api/v1/transactions` | List imported transactions |
 | `PUT` | `/api/v1/transactions/{id}/envelope-splits` | Assign or split a transaction |
@@ -162,6 +165,17 @@ Candidate JSON fields for review:
 The household currency is selected once at creation. `currency_code` is an
 uppercase ISO 4217 code. Whether to default it from locale or require explicit
 selection remains open.
+
+```json
+{
+  "on_budget": true
+}
+```
+
+The account budget-status operation explicitly includes or excludes that
+account from envelope budgeting. The budget-start request may include a
+`start_date`; exact date semantics and opening-balance response shape remain
+open.
 
 ```json
 {
@@ -298,6 +312,49 @@ puts an envelope below zero; show the resulting deficit for review. Treatment of
 income, transfers, unassigned transactions, and transaction corrections remains
 open.
 
+### CORE-015: Budget Opening Baseline
+
+**Owner direction:** Budget setup records opening account balances and a budget
+start date. Transactions before the start are history-only; activity after the
+start affects envelope spending. Opening balances are assigned to envelopes
+rather than added to envelope allocations as a second source of funds.
+
+**Proposal:** Capture provider balances for explicitly on-budget accounts when
+the budget starts, and store a baseline timestamp. The exact relationship
+between the user-visible start date, provider balance timestamp, and transactions
+posted on the cutoff date needs definition before implementation. Whether setup
+requires every opening dollar to be allocated before normal use also remains open.
+
+### CORE-016: On-Budget Account Selection
+
+**Owner direction:** A member explicitly marks each linked account on-budget or
+tracking-only. Only on-budget accounts contribute opening balances and
+budget-relevant transactions to envelope calculations.
+
+**Proposal:** Newly connected accounts default to tracking-only until selected.
+Changing account status after the budget starts must not silently rewrite past
+allocations or transaction assignments; migration behavior remains open.
+
+### CORE-017: SimpleFIN Credential Encryption
+
+**Owner direction:** Encrypt stored SimpleFIN Access URLs in SQLite using a key
+file stored outside the database volume. The key must persist across app restarts
+and remain separately protected from database backups.
+
+**Proposal:** Use authenticated encryption with a 32-byte random key, read from a
+secret file mounted read-only for the app. Never log Setup Tokens, Access URLs,
+or key material. Missing or invalid key material must fail closed for affected
+connections, not fall back to plaintext. Key generation, path/config name,
+permissions, rotation, and recovery procedures remain open for implementation
+design.
+
+### CORE-018: Durable Database
+
+**Owner direction from the original stack handoff:** Use SQLite in WAL mode with
+`modernc.org/sqlite` for a pure-Go build. Persist the database outside the
+container's writable layer. The exact database path, migration runner, backup
+format, and restore procedure remain open for implementation design.
+
 ## Dependencies
 
 Depends on the repository's security, testing, and delivery requirements in
@@ -313,6 +370,14 @@ These are proposed cases for discussion, not approved test obligations.
   household data is not returned.
 - Given a valid member, requests for another household's envelope, request,
   account, or transaction do not reveal or mutate that data.
+- Given connected household accounts, only explicitly on-budget accounts
+  contribute opening balances or budget-relevant transactions.
+- Given a transaction before the budget start, it is history-only and does not
+  reduce envelope availability.
+- Given an invite intended for one verified email, a different Google identity
+  cannot accept it.
+- Given a stored SimpleFIN Access URL, the database does not contain its
+  plaintext; missing encryption-key material never triggers plaintext fallback.
 - Given a request split across multiple envelopes, approval reserves every share
   or none of them.
 - Given a pending or approved request that has not been matched, requester
@@ -378,6 +443,16 @@ These are proposed cases for discussion, not approved test obligations.
   actual transaction amount for posted spending, and have no automatic tolerance.
 - Owner direction, 2026-11-19: Unplanned imported spending can make an envelope
   negative; record actual spend and flag the deficit rather than reject it.
+- Owner direction, 2026-11-23: Record opening balances and a budget start date;
+  earlier transactions are history-only.
+- Owner direction, 2026-11-23: Require explicit on-budget/tracking-only selection
+  for each linked account.
+- Owner direction, 2026-11-23: Bind single-use invites to the intended partner's
+  verified Google email.
+- Owner direction, 2026-11-23: Encrypt SimpleFIN Access URLs in SQLite with a
+  persistent key file stored outside the database volume.
+- Owner direction from original stack handoff: SQLite WAL with
+  `modernc.org/sqlite`; persist database state outside the container layer.
 - Scope revision, 2026-11-19: Bank import and transaction matching moved into
   the prototype baseline. CORE-005 is superseded by CORE-014; its ID is retained.
 - No detailed CORE requirement or API route in this draft is approved yet.
