@@ -6,6 +6,10 @@ starting point to refine, not an approved scope or roadmap. The repository
 currently contains a small Go web application foundation; its implementation
 choices are not yet product decisions.
 
+Household ERP will be free-to-use open-source software: no required
+subscription, paid account, or paywalled core feature. Donations and sponsors
+may support development; any future hosting or paid support remains optional.
+
 ## Start here
 
 Install Go **1.27.4** (see `go.mod`), then:

@@ -355,6 +355,15 @@ design.
 container's writable layer. The exact database path, migration runner, backup
 format, and restore procedure remain open for implementation design.
 
+### CORE-019: Free And Open-Source Access
+
+**Owner direction, 2026-11-23:** The software is free of charge to use and open
+source. No license fee, required subscription, paid account, or paywall may gate
+the self-hosted core or its core features. Donations and sponsorships are
+welcome. Future hosted service or paid support may be offered separately and
+must remain optional for self-hosters. Third-party services and infrastructure
+may charge independently; their costs must not be presented as project fees.
+
 ## Dependencies
 
 Depends on the repository's security, testing, and delivery requirements in
@@ -403,6 +412,12 @@ These are proposed cases for discussion, not approved test obligations.
   flagged rather than rejected.
 - Given a repeated provider sync or CSV/OFX import, an already-imported source
   transaction is not duplicated; exact identity rules remain open.
+- Given a self-hosted installation, no core feature requires a subscription,
+  paid account, or project payment.
+- Given a user declines donations or paid optional services, self-hosted core
+  features remain available.
+- Given a third-party bank or infrastructure charge, it is identified as an
+  external cost rather than a Household ERP software fee.
 
 ## Decisions
 
@@ -455,6 +470,9 @@ These are proposed cases for discussion, not approved test obligations.
   `modernc.org/sqlite`; persist database state outside the container layer.
 - Scope revision, 2026-11-19: Bank import and transaction matching moved into
   the prototype baseline. CORE-005 is superseded by CORE-014; its ID is retained.
+- Owner direction, 2026-11-23: Household ERP is free-to-use FOSS. Donations and
+  sponsorships are welcome; future hosting or paid support remains optional and
+  does not gate core self-hosted functionality.
 - No detailed CORE requirement or API route in this draft is approved yet.
 
 ## Verification
