@@ -243,8 +243,8 @@ are proposals, not stable API guarantees.
 
 **Owner direction:** The creator invites the second adult using a single-use
 invite link that expires after seven days. The link can be accepted once.
-Revocation, email binding, link generation, and whether the invite must be
-accepted by a specific Google identity remain open.
+Acceptance requires a Google identity with the intended partner's verified
+email, as specified in CORE-003. Revocation and link generation remain open.
 
 ### CORE-011: Bank Providers And Import
 
@@ -315,15 +315,33 @@ open.
 ### CORE-015: Budget Opening Baseline
 
 **Owner direction:** Budget setup records opening account balances and a budget
-start date. Transactions before the start are history-only; activity after the
-start affects envelope spending. Opening balances are assigned to envelopes
-rather than added to envelope allocations as a second source of funds.
+start date. Transactions before the start are history-only. Opening cash is
+available for allocation, rather than added to envelope allocations as a second
+source of funds. The treatment of later income, transfers, and card debt is
+proposed in CORE-020.
 
 **Proposal:** Capture provider balances for explicitly on-budget accounts when
 the budget starts, and store a baseline timestamp. The exact relationship
 between the user-visible start date, provider balance timestamp, and transactions
 posted on the cutoff date needs definition before implementation. Whether setup
 requires every opening dollar to be allocated before normal use also remains open.
+SimpleFIN provides a `balance-date`; pending transactions may have `posted` set
+to zero, and pending data is optional. A date alone cannot safely determine
+whether every charge is reflected in the opening balance. See the
+[SimpleFIN protocol](https://simplefin.org/protocol.html). Reconciliation at
+the cutoff requires an explicit design and acceptance cases. **Proposal:** Show
+the opening balances for household review and hold ambiguous transactions for
+review rather than silently counting them again or discarding them.
+
+**Proposed opening workflow:** For each selected on-budget account, show the
+reported balance and its available timestamp, let a member confirm or correct
+the opening amount, and retain the confirmed amount and reference point. Import
+older transactions as history. If a transaction posts later but could already
+be reflected in the confirmed opening balance, ask a member whether it belongs
+to the opening balance or should change the budget; retain the decision so a
+later sync does not apply the transaction twice. Do not treat a pending charge's
+missing posted timestamp as evidence that it is new spending. Exact provider
+balance types, cutoff boundaries, and later corrections remain open.
 
 ### CORE-016: On-Budget Account Selection
 
@@ -364,6 +382,160 @@ welcome. Future hosted service or paid support may be offered separately and
 must remain optional for self-hosters. Third-party services and infrastructure
 may charge independently; their costs must not be presented as project fees.
 
+### CORE-020: Budgeting Reference And Credit Cards
+
+**Owner direction, 2026-11-24:** Use YNAB-like budgeting behavior as the
+default reference when refining financial decisions, except where household
+procurement needs a different rule. Credit cards are essential to the first
+usable prototype. This is product direction, not blanket approval of YNAB's
+behavior or of the proposals below.
+
+**Proposal:** Treat an existing credit-card balance as debt, not spendable
+cash. Money can be assigned toward that existing balance. When a covered card
+purchase is recorded against a spending envelope, move the covered money to a
+card-payment category. A payment from an on-budget cash account to the card is
+a transfer, not a second expense. Record and flag overspending as directed in
+CORE-014. For an uncovered card purchase, propose moving only covered funds to
+the card-payment category; the uncovered amount remains card debt. Cash
+overspending instead means cash has left the budget without sufficient envelope
+coverage. Exact mixed cash/card overspending, month-end handling, refunds, and
+pending charges remain open for review.
+
+**Cash-flow example for review:** A household has $1,000 in checking and no
+money assigned yet. The budget shows $1,000 available to assign. Assigning $300
+to groceries leaves $700 available to assign and $300 in groceries. A $500
+paycheck increases available-to-assign money to $1,200. Moving $200 from
+checking to an on-budget savings account does not create income or spending and
+does not change those budget amounts. Opening balances must not be added again
+when historical transactions are imported.
+
+**Proposed reconciliation invariant:** When all on-budget cash-account activity
+has been accounted for and there is no overspending or unresolved correction,
+the total of unassigned cash and envelope balances, including reserved amounts
+and card-payment balances, equals the cash-account balance. Credit-card debt is
+tracked separately. A purchase request reservation reduces an envelope's
+available-to-spend amount but does not remove cash or create spending. Treatment
+of deficits and unresolved transactions must be specified before relying on this
+invariant generally.
+
+For example, with $1,000 in checking and $200 already owed on a card, propose
+starting with $1,000 available to assign, not $800. Assign $200 to the card
+payment and $50 to groceries. A covered $50 grocery card purchase moves that
+$50 to the card-payment category: $250 is set aside for the $250 card balance.
+Paying $250 transfers money from checking to the card without another grocery
+expense. Exact opening-balance timing and corrections still need definition.
+
+**Procurement example for review:** A groceries envelope has $100 available.
+Approving a $50 request reserves $50, leaving $50 available. A member confirms
+a matching $45 card charge. The $50 reservation is released, $45 is recorded as
+groceries spending, and $45 is set aside for the card payment; the groceries
+envelope now has $55 available. The member sees and confirms the $5 variance.
+This example assumes the purchase is fully covered and does not settle rules for
+partial charges, shortfalls, corrections, or refunds.
+
+Reference: <https://www.ynab.com/blog/how-to-do-credit-cards-in-ynab>.
+Overspending reference:
+<https://support.ynab.com/en_us/overspending-in-ynab-a-guide-ryWoxEyi>.
+
+### CORE-021: Monthly Rollover And Open Reservations
+
+**Proposal:** Treat each budget month as part of a continuous plan. Positive
+unspent envelope balances carry into the next month; a new month does not create
+cash or reset an approved, still-open request's reservation. Keep the reservation
+against its original envelope shares until the request is matched or cancelled.
+
+**YNAB-inspired proposal:** Uncovered cash overspending reduces the following
+month's unassigned cash. Uncovered credit-card overspending remains card debt
+and does not become cash available to assign. Do not book a second charge when
+the month changes. Mixed cash/card overspending, later edits to prior months,
+and how a member covers an overspend across the boundary require further design.
+
+**Reservation example for review:** An envelope has $100 before reservations
+and an approved open request reserves $40. At month end, $60 is available to
+spend. With no other activity, the next month starts with $100 in the envelope,
+$40 still reserved, and $60 available. Matching or cancelling that request later
+must release its reservation once; a match also records the actual spending.
+
+**Overspending examples for review:** With $20 allocated and a $30 cash purchase,
+the envelope is $10 overspent; if left uncovered, the next month's unassigned
+cash is reduced by $10. For a $30 card purchase against a $20 envelope, $20 is
+set aside toward the card payment and $10 remains unfunded card debt. These cases
+assume no other transactions, prior-month adjustments, or reservations.
+
+Reference for overspending:
+<https://support.ynab.com/en_us/overspending-in-ynab-a-guide-ryWoxEyi>.
+
+### CORE-022: Sign-In And Invitation Security
+
+**Proposal:** The browser sign-in uses an OIDC authorization-code flow with
+PKCE, a one-time state value, and a nonce. The server verifies the token's
+signature, issuer, intended client audience, expiry, and nonce before creating
+an application session. Identify a Google user by verified issuer and subject;
+do not merge users solely because their email matches.
+
+An invite token is unpredictable, single-use, and stored as a verifier rather
+than plaintext. Acceptance requires a signed-in Google identity whose verified
+email matches the intended recipient. The server checks expiry, household
+capacity, and prior use atomically with membership creation. An invite alone
+does not create a session or authorize household access. Exact email comparison,
+revocation, recovery, rate limits, and session duration remain open.
+
+The browser session uses a secure, HttpOnly cookie and an appropriate SameSite
+policy. Unsafe cookie-authenticated requests require CSRF protection; GET and
+HEAD do not make state changes. Remote access requires HTTPS. Local development
+and reverse-proxy configuration must be specified without weakening production
+session security. The later Android session protocol is a separate proposal.
+
+### CORE-023: Bank Connection Request Safety
+
+**Proposal:** Treat the SimpleFIN Setup Token, claim URL, Access URL, and any
+embedded credentials as secrets and untrusted input. Never return them in API
+responses, logs, traces, or unsanitized provider errors. Store Access URLs only
+after authenticated encryption as described in CORE-017.
+
+For the hosted Bridge flow, require HTTPS and reject requests to loopback,
+private, link-local, multicast, or otherwise non-public destinations by default.
+Apply the same checks to redirects and to the address actually dialed, including
+IPv4-mapped IPv6 addresses, so DNS changes cannot bypass validation. Configure
+outbound proxies so they cannot silently bypass this policy. Bound redirects,
+request duration, and response size. Local-network SimpleFIN servers may need a
+future explicit, separately reviewed exception; they are not silently allowed.
+
+Surface a sanitized connection failure without exposing credentials. A failed
+or repeated sync must not create partial budget changes or duplicate imported
+transactions. Exact provider retries, identity matching across imports, and
+operator-configured network policy remain open.
+
+### CORE-024: Backup And Recovery
+
+**Proposal:** Provide an operator-documented, WAL-consistent SQLite backup and
+restore process. A backup must include committed data still present in the WAL;
+copying only a live database file is not a sufficient backup procedure. Verify
+restores against a separate destination before replacing live data. Migration
+and downgrade compatibility, retention, and backup scheduling remain open.
+
+The operator must separately protect and back up the external encryption key
+file. Database backups without that key cannot recover encrypted bank-connection
+credentials; loss of the key must not destroy household records or trigger a
+plaintext fallback. Recovery may require reconnecting the bank provider. The
+database contains sensitive financial data even when connection credentials are
+encrypted, so backups and host storage require appropriate access controls.
+
+### CORE-025: Envelope Reallocation And Concurrent Spending
+
+**Proposal:** A household member may move assigned money between envelopes
+without changing total household cash. A move draws from the source envelope's
+currently available, unreserved funds; it cannot take money already reserved
+for an approved request. Approval and reallocation both check and update their
+affected envelopes atomically, so concurrent actions cannot spend the same
+available funds twice.
+
+**Owner direction, 2026-11-24:** An imported unplanned purchase records actual
+spending even if that creates a deficit. It does not cancel an approved request
+or remove its existing reservation. Show the deficit and the open reservation so
+the household can move money or cancel the request. Exact rules for modifying an
+approved request and how to resolve deficits across months remain open.
+
 ## Dependencies
 
 Depends on the repository's security, testing, and delivery requirements in
@@ -383,10 +555,42 @@ These are proposed cases for discussion, not approved test obligations.
   contribute opening balances or budget-relevant transactions.
 - Given a transaction before the budget start, it is history-only and does not
   reduce envelope availability.
+- Given an uncertain relationship between an opening balance and a transaction,
+  the transaction is presented for review rather than silently counted twice.
+- Given a pending charge later posts and may have been included in the opening
+  balance, a member can decide whether it was already included or affects the
+  budget; repeating the import does not apply that decision twice.
+- Given $1,000 in checking and $200 in existing card debt, $1,000 is available
+  to assign; assigning $200 to card payment does not create $200 of new expense.
+- Given a covered $50 card purchase assigned to groceries, $50 moves from
+  groceries to the card-payment category; paying the card is a transfer.
+- Given a $50 approved reservation and a confirmed $45 card purchase, release
+  the reservation, record $45 of spending, and show the $5 variance.
+- Given an open $40 request reserved in a $100 envelope at month end, the next
+  month retains $40 reserved and $60 available without creating new funds.
+- Given uncovered $10 cash overspending at month end, next month's unassigned
+  cash is reduced by $10 without recording the purchase a second time.
+- Given a $30 card purchase with only $20 budgeted, the proposed card-payment
+  funding is $20 and the remaining $10 is unfunded debt.
 - Given an invite intended for one verified email, a different Google identity
   cannot accept it.
+- Given an invalid OIDC state, nonce, issuer, audience, signature, or expiry,
+  sign-in does not create an application session.
+- Given concurrent attempts to accept the same invite, at most one membership
+  is created, and an expired or previously used token is rejected.
+- Given an unsafe cross-site request using a browser session, household state
+  does not change.
 - Given a stored SimpleFIN Access URL, the database does not contain its
   plaintext; missing encryption-key material never triggers plaintext fallback.
+- Given a Setup Token or redirect pointing to a prohibited internal address,
+  the server does not connect to that destination or reveal token contents.
+- Given provider errors containing credentials, user-visible errors and logs
+  omit those credentials.
+- Given committed changes in SQLite's WAL, the documented backup and restore
+  process retains those changes in a separate restored database.
+- Given a database backup without its encryption key, household records remain
+  recoverable but encrypted bank credentials are not silently replaced or
+  exposed; reconnecting may be required.
 - Given a request split across multiple envelopes, approval reserves every share
   or none of them.
 - Given a pending or approved request that has not been matched, requester
@@ -399,6 +603,12 @@ These are proposed cases for discussion, not approved test obligations.
   approved until its full split is available.
 - Given duplicate or concurrent approval attempts, the request has one decision
   and at most one reservation.
+- Given two pending requests for $70 and $60 against $100 available, concurrent
+  approvals result in at most one approval; the other remains unapproved.
+- Given $80 reserved in an envelope with $100 before reservations, a member may
+  move at most $20 out without changing or cancelling the reservation.
+- Given an unplanned $50 expense against that envelope, record the expense and
+  retain the $80 reservation; available funds show a $30 deficit for review.
 - Given an imported transaction split, assigned shares sum to the transaction
   amount before it is considered reconciled.
 - Given a proposed transaction match, no request or balance changes until a
@@ -473,6 +683,11 @@ These are proposed cases for discussion, not approved test obligations.
 - Owner direction, 2026-11-23: Household ERP is free-to-use FOSS. Donations and
   sponsorships are welcome; future hosting or paid support remains optional and
   does not gate core self-hosted functionality.
+- Owner direction, 2026-11-24: Use YNAB-like budgeting as the default reference
+  for financial decisions; credit cards are essential to the prototype.
+- Owner direction, 2026-11-24: Unplanned spending that creates an envelope
+  deficit does not cancel an approved request or remove its reservation; show
+  the deficit for the household to resolve.
 - No detailed CORE requirement or API route in this draft is approved yet.
 
 ## Verification
