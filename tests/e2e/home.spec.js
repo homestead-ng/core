@@ -4,8 +4,8 @@ test('landing page has its title, content, and health link', async ({ page }) =>
   const response = await page.goto('/');
 
   expect(response.status()).toBe(200);
-  await expect(page).toHaveTitle('Household ERP');
-  await expect(page.getByRole('heading', { level: 1, name: 'Household ERP' })).toBeVisible();
+  await expect(page).toHaveTitle('Homestead-NG');
+  await expect(page.getByRole('heading', { level: 1, name: 'Homestead-NG' })).toBeVisible();
   await expect(page.getByText('Your new project starts here.')).toBeVisible();
   await expect(page.getByRole('link', { name: 'Service health' })).toHaveAttribute('href', '/healthz');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);

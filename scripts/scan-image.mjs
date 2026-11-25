@@ -3,9 +3,9 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-const directory = mkdtempSync(join(tmpdir(), 'go-household-erp-scan-'));
+const directory = mkdtempSync(join(tmpdir(), 'homestead-ng-core-scan-'));
 try {
-  execFileSync('docker', ['save', '-o', join(directory, 'image.tar'), process.argv[2] ?? 'go-household-erp:ci'], { stdio: 'inherit' });
+  execFileSync('docker', ['save', '-o', join(directory, 'image.tar'), process.argv[2] ?? 'homestead-ng-core:ci'], { stdio: 'inherit' });
   execFileSync('docker', [
     'run', '--rm', '-i', '--read-only', '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges',
     '--tmpfs', '/tmp:rw,nosuid,nodev',

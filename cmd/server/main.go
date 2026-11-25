@@ -13,8 +13,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/mstrhakr/go-household-erp/internal/config"
-	"github.com/mstrhakr/go-household-erp/internal/web"
+	"github.com/homestead-ng/core/internal/config"
+	"github.com/homestead-ng/core/internal/web"
 )
 
 var (

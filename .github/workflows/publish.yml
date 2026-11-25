@@ -92,7 +92,7 @@ jobs:
       - uses: actions/attest@daf44fb950173508f38bd2406030372c1d1162b1
         with:
           subject-checksums: dist/checksums.txt
-          predicate-type: https://github.com/mstrhakr/go-household-erp/source-revision/v1
+          predicate-type: https://github.com/homestead-ng/core/source-revision/v1
           predicate: '{"repository":"${{ github.repository }}","revision":"${{ inputs.sha }}","tag":"${{ inputs.tag }}","run":"${{ github.run_id }}"}'
 
   binaries:

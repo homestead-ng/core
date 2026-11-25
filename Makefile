@@ -76,5 +76,5 @@ check-security:
 	go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
 
 check-container:
-	docker build -t go-household-erp:ci .
-	node scripts/scan-image.mjs go-household-erp:ci
+	docker build -t homestead-ng-core:ci .
+	node scripts/scan-image.mjs homestead-ng-core:ci

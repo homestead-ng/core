@@ -2,7 +2,7 @@
 
 Project-specific evidence only. The repository began from the public
 `mstrhakr/go-template` scaffold; its prior releases, GitHub settings, and test
-runs are not verification for Household ERP.
+runs are not verification for Homestead-NG.
 
 ## Executed Locally
 
@@ -23,8 +23,14 @@ security features enabled, read-only allowlisted Actions, active protected-main
 and immutable-tag rulesets. Protected `main` requires PRs and the `CI gate`; the
 latest `main` CI run succeeded. Release/container/docs publishing remains off.
 
-and documentation publication have not been executed for this repository.
-No Household ERP application behavior has been implemented or verified. Native
+The repository was transferred to `homestead-ng/core` on 2026-11-25. Readback
+confirmed it remains public, with the protected-main CI gate, immutable version
+tags, release approval, and selected pinned Actions. Secret scanning and push
+protection were re-enabled and verified after transfer. Release and container
+publication remain disabled. Organization-level Actions policy could not be
+read with the current token.
+
+No Homestead-NG application behavior has been implemented or verified. Native
 platform CI, releases, images, and documentation publication have not been
 executed for this repository.
 

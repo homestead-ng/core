@@ -97,7 +97,7 @@ gh attestation verify oci://ghcr.io/owner/project@sha256:DIGEST --repo OWNER/PRO
 <p>For a manually selected source revision, the triggering workflow revision may
 differ from packaged source. Verify the additional signed source-revision receipt
 and inspect its repository/revision/tag/run against your expectations:</p>
-<pre><code>gh attestation verify FILE --repo OWNER/PROJECT --predicate-type https://github.com/mstrhakr/go-household-erp/source-revision/v1 --format json</code></pre>
+<pre><code>gh attestation verify FILE --repo OWNER/PROJECT --predicate-type https://github.com/homestead-ng/core/source-revision/v1 --format json</code></pre>
 <p>The predicate URI identifies this schema, not a required upstream signer.
 Verify your own repository/workflow identity. Attestations are origin evidence,
 not proof that upstream code or an authorized workflow is harmless. Publication

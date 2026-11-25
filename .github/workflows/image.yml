@@ -167,5 +167,5 @@ jobs:
           subject-name: ${{ needs.publish.outputs.image }}
           subject-digest: ${{ needs.publish.outputs.digest }}
           push-to-registry: true
-          predicate-type: https://github.com/mstrhakr/go-household-erp/source-revision/v1
+          predicate-type: https://github.com/homestead-ng/core/source-revision/v1
           predicate: '{"repository":"${{ github.repository }}","revision":"${{ inputs.sha }}","tag":"${{ inputs.tag }}","run":"${{ github.run_id }}"}'

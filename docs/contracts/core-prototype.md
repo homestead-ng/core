@@ -4,14 +4,22 @@ weight = 10
 +++
 # CORE: Household Budget And Purchase Approval Prototype
 
-**Status:** Draft (prototype scope and explicit owner directions approved on
-2026-11-19. Detailed requirements, API shapes, security/session details, and
-verification criteria remain proposals unless explicitly stated below.
+**Status:** Draft with prototype scope and explicit owner directions approved on
+2026-11-19 and subsequently recorded dates. Detailed requirements, API shapes,
+security/session details, and verification criteria remain proposals unless
+explicitly stated below.
+
+**Ownership review required, 2026-11-25:** The owner subsequently chose a
+modular platform with independently deployable modules, including optional
+Budgeting. This draft predates that direction. Its recorded budgeting and
+procurement decisions are preserved, but statements assigning all financial
+behavior to Core and its proposed API routes require review before implementation.
+Do not treat this note as approval of a new module contract.
 
 ## Purpose And Scope
 
-Describe a first usable Go backend and WebUI slice: establish a two-adult
-household, allocate funds to envelopes, submit purchase requests with
+Describe a first usable Go backend and WebUI slice: establish one two-adult
+household per server, allocate funds to envelopes, submit purchase requests with
 requester-selected envelope splits, and let the other member approve or reject.
 Import account transactions through SimpleFIN Bridge or CSV/OFX, assign or split
 transactions across envelopes, and suggest matches to approved requests for
@@ -40,6 +48,11 @@ were added to the prototype scope on 2026-11-19. Exact behavior remains subject
 to review. Broader membership, meal planning, pantry, assets, and family records
 are outside this slice.
 
+**Owner direction, 2026-11-24:** One self-hosted server serves one household.
+Multi-tenant operation is not planned. The WebUI is desktop-first; full mobile
+browser parity is not required for the prototype. The separate native Android
+companion remains a later client.
+
 ### CORE-002: Google Sign-In
 
 **Owner direction:** Google sign-in is the shared identity provider for WebUI
@@ -61,11 +74,23 @@ identity must not access household data.
 
 **Proposal:** Every household-owned read or mutation is authorized against the
 authenticated member's household membership. A client-supplied household or
-resource ID is not proof of access. The initial prototype has two adult members;
-roles beyond this case and membership in multiple households remain out of scope.
+resource ID is not proof of access. The prototype has one household per server
+and two adult members; roles beyond this case are out of scope.
 The owner selected a single-use invite link for the second member, valid seven
 days and bound to the partner's intended verified Google email. The link does
 not itself authenticate or grant access before that identity check.
+
+**Owner direction, 2026-11-24:** Both adults can see and manage household
+accounts, envelopes, and requests. The requester still cannot approve their own
+request. Private accounts and categories are outside the first prototype.
+The operator controls household creation; Google sign-in alone must not grant an
+arbitrary user permission to create a household. The setup authorization and
+recovery mechanism remain open.
+
+**Owner direction, 2026-11-24:** The operator obtains a single-use setup code
+from the server, and the intended creator enters it after Google sign-in to
+authorize creation of the household. Code generation, expiry, delivery, and
+operator recovery mechanics remain open; the code must not appear in logs.
 
 ### CORE-004: Envelope Amounts
 
@@ -94,6 +119,15 @@ approved request until a transaction match is confirmed. Cancelling an approved
 request releases every envelope reservation atomically. Cancellation after a
 confirmed match, cooling-off periods, partial purchases, and other lifecycle
 details remain open. Transaction matching behavior is addressed in CORE-012.
+
+**Owner direction, 2026-11-24:** The requester may edit and resubmit a pending
+or approved request before matching. A changed request requires a fresh decision
+by the other member; editing an approved request releases its reservation while
+the revised request awaits review. Exact edit history and the interaction with
+concurrent decisions remain open.
+
+**Owner direction, 2026-11-24:** Approved requests stay open and reserved until
+matched or cancelled; automatic request expiry is not part of the prototype.
 
 ### CORE-007: Approval Authority
 
@@ -256,11 +290,23 @@ public pricing, not a guarantee of bank coverage or a final cost model.
 automatic polling is out of scope for the first prototype. CSV/OFX import is
 also member initiated.
 
+**Owner direction, 2026-11-24:** A household can start without connecting
+SimpleFIN by creating accounts and opening balances manually; CSV/OFX import
+remains available. SimpleFIN support is still part of the prototype. Members can
+enter and correct manual transactions without importing them. Exact editing and
+audit details remain open.
+
+**Owner direction, 2026-11-24:** Automatically skip proven duplicate imports;
+hold possible duplicates for a member to review rather than silently discarding
+an uncertain transaction. Exact source-specific identity and update rules remain
+open.
+
 **Proposal:** The backend imports account and transaction data through a provider
 boundary. SimpleFIN Setup Tokens are exchanged server-side for Access URLs;
 stored Access URLs are treated as secrets and are never logged. CSV/OFX import
 remains available when an institution is unsupported. Connection ownership,
-sync cadence, duplicate handling, and account removal behavior remain open. The
+sync status, manual-sync limits, duplicate identity rules, and account removal
+behavior remain open. The
 owner reports that their joint account can access both partners' individual
 accounts, so one joint-account connection is expected to cover this household;
 confirm actual institution coverage during setup. Subscription coverage is not
@@ -284,12 +330,52 @@ alone does not change balances or close a request. The prototype uses a one-to-o
 match: one request may match one transaction, and one transaction may match one
 request. A transaction can still be split across envelopes.
 
+**Owner direction, 2026-11-24:** Pending bank charges are displayed separately
+as a warning or preview; they do not change official envelope balances and cannot
+be confirmed as request matches until posted. Matching pending and posted
+records and communicating the risk of unposted charges remain open.
+
 **Proposal:** A confirmed match records posted spending against the selected
 envelope shares and releases the request's encumbrance without double-counting.
 If the transaction amount differs from the request amount, show the variance and
 require a member to confirm; use the actual transaction amount for posted spend.
 No automatic amount tolerance is used in the prototype. Refunds, pending
 transactions, and the suggestion algorithm remain open.
+
+**Owner direction, 2026-11-24:** Either household member may choose the actual
+transaction's envelope split and confirm a match, including when it differs from
+the approved request's split. A separate partner approval is not required for
+that reconciliation. The original approved request and the bank transaction
+remain distinct records.
+
+**Above-estimate example for review:** A household has $100 in a home envelope,
+with no other spending or reservations. Approving an $80 request reserves $80,
+leaving $20 available. A $120 debit-card charge is imported. A member reviews
+and confirms the $40 variance and assigns the actual charge to that envelope.
+The system releases the $80 reservation, records $120 of spending, closes the
+match, and shows a $20 deficit. It must not reject or alter the bank charge to
+make the plan balance.
+
+**Changed-split example for review:** A request reserves $60 from home and $20
+from personal spending. Its actual bank charge is $100. Either member may
+confirm a $70 home and $30 personal split. The $80 in original reservations is
+released and the $100 transaction is recorded against the chosen envelopes.
+**Proposal:** Retain the approved and actual splits for later review.
+
+**Proposal:** Match confirmation and requester cancellation compete for the
+same open request atomically. Only one may succeed; either path releases its
+reservation once. If matching wins, record the transaction's actual envelope
+spending once. If cancellation wins, keep the imported transaction available
+for review and categorization; do not delete or silently ignore it. A repeated
+confirmation must not create another match or post spending twice. Exact API
+conflict and retry responses remain open.
+
+**Owner direction, 2026-11-24:** A member may undo an incorrect match and review
+it again. Keep the bank transaction, restore the request's reservation, retain
+correction history, and flag any resulting deficit. **Proposal:** Keep actual
+spending recorded until explicitly recategorized; restoring an open request's
+reservation represents a separate future commitment, not another bank charge.
+Exact concurrent undo, cancellation, and rematching behavior remains open.
 
 ### CORE-013: Request Envelope Splits
 
@@ -303,14 +389,14 @@ adjustments remain open.
 
 ### CORE-014: Available Funds With Imported Spending
 
-**Proposal:** After posted transactions are assigned to envelopes, available
-funds equal allocated funds minus posted envelope spending minus approved open
-request encumbrances. A confirmed match moves value from encumbered to posted
-spending without counting it twice. Imported spending without a matched request
-is assigned or split by a member. Actual posted spending is recorded even if it
-puts an envelope below zero; show the resulting deficit for review. Treatment of
-income, transfers, unassigned transactions, and transaction corrections remains
-open.
+**Proposal:** For a budget month, available funds reflect carried envelope funds
+and assignments or reallocations, minus posted envelope spending and approved
+open request encumbrances. See CORE-021 for proposed rollover behavior. A
+confirmed match moves value from encumbered to posted spending without counting
+it twice. Imported spending without a matched request is assigned or split by a
+member. Actual posted spending is recorded even if it puts an envelope below
+zero; show the resulting deficit for review. Treatment of income, transfers,
+unassigned transactions, and transaction corrections remains open.
 
 ### CORE-015: Budget Opening Baseline
 
@@ -352,6 +438,14 @@ budget-relevant transactions to envelope calculations.
 **Proposal:** Newly connected accounts default to tracking-only until selected.
 Changing account status after the budget starts must not silently rewrite past
 allocations or transaction assignments; migration behavior remains open.
+
+**Owner direction, 2026-11-24:** Members can add accounts and change their
+on-budget or tracking-only status after budget setup, with explicit review.
+The application must not silently rewrite historical allocations or spending.
+When a new on-budget cash account is added, its reviewed opening balance becomes
+unassigned money; earlier transactions are history-only. Opening card debt is
+tracked separately, as described in CORE-020. Cutoff ambiguities still require
+the review described in CORE-015.
 
 ### CORE-017: SimpleFIN Credential Encryption
 
@@ -398,8 +492,13 @@ a transfer, not a second expense. Record and flag overspending as directed in
 CORE-014. For an uncovered card purchase, propose moving only covered funds to
 the card-payment category; the uncovered amount remains card debt. Cash
 overspending instead means cash has left the budget without sufficient envelope
-coverage. Exact mixed cash/card overspending, month-end handling, refunds, and
-pending charges remain open for review.
+coverage. Exact mixed cash/card overspending, month-end handling, partial refunds,
+and matching pending charges to posted transactions remain open for review.
+
+**Owner direction, 2026-11-24:** A member reviews an imported refund and
+assigns it back to the original spending envelope; card-payment funds are
+adjusted accordingly. The exact handling of a missing original purchase,
+multi-envelope refunds, and partial refunds remains open.
 
 **Cash-flow example for review:** A household has $1,000 in checking and no
 money assigned yet. The budget shows $1,000 available to assign. Assigning $300
@@ -450,11 +549,26 @@ and does not become cash available to assign. Do not book a second charge when
 the month changes. Mixed cash/card overspending, later edits to prior months,
 and how a member covers an overspend across the boundary require further design.
 
+**Proposal:** Distinguish an envelope's balance before reservations from its
+available-to-spend amount. A negative available amount caused solely by an open
+reservation exceeding the remaining envelope balance is a commitment shortfall,
+not an additional cash purchase. Carry the balance and reservation forward and
+show the shortfall; do not also deduct it from next month's unassigned cash as
+cash overspending. Actual cash spending beyond the envelope balance still needs
+the cash-overspending treatment above.
+
 **Reservation example for review:** An envelope has $100 before reservations
 and an approved open request reserves $40. At month end, $60 is available to
 spend. With no other activity, the next month starts with $100 in the envelope,
 $40 still reserved, and $60 available. Matching or cancelling that request later
 must release its reservation once; a match also records the actual spending.
+
+**Commitment-shortfall example for review:** An envelope has $100 and an open
+request reserves $80. An unplanned $50 cash purchase leaves $50 in the envelope
+before reservations and $30 below zero available. If unresolved at month end,
+carry the $50 balance and $80 reservation forward and continue showing the $30
+shortfall. Do not also deduct $30 from next month's unassigned cash solely for
+the reservation.
 
 **Overspending examples for review:** With $20 allocated and a $30 cash purchase,
 the envelope is $10 overspent; if left uncovered, the next month's unassigned
@@ -508,11 +622,21 @@ operator-configured network policy remain open.
 
 ### CORE-024: Backup And Recovery
 
+**Owner direction, 2026-11-24:** The first prototype uses local backups, with
+scheduled and operator-initiated backups. An authorized operator can restore a
+local backup without Google sign-in or internet access; normal application access
+still requires the configured sign-in. Offline restore uses a documented local
+server command. Google Drive backup is deferred. Full local backups default to
+daily, with the most recent seven successful copies retained; schedule and
+retention are configurable.
+
 **Proposal:** Provide an operator-documented, WAL-consistent SQLite backup and
 restore process. A backup must include committed data still present in the WAL;
 copying only a live database file is not a sufficient backup procedure. Verify
-restores against a separate destination before replacing live data. Migration
-and downgrade compatibility, retention, and backup scheduling remain open.
+restores against a separate destination before replacing live data. Report
+scheduled-backup failures and retain a previous successful backup when a new one
+fails. Destination configuration, time of day, migration/downgrade compatibility,
+and incremental-backup retention remain open.
 
 The operator must separately protect and back up the external encryption key
 file. Database backups without that key cannot recover encrypted bank-connection
@@ -520,6 +644,19 @@ credentials; loss of the key must not destroy household records or trigger a
 plaintext fallback. Recovery may require reconnecting the bank provider. The
 database contains sensitive financial data even when connection credentials are
 encrypted, so backups and host storage require appropriate access controls.
+
+**Future direction, not prototype scope:** Either adult may connect a Google
+account for optional Drive backups after separate authorization. Encrypt cloud
+backups before upload and use a recovery key stored outside the server and Drive.
+This backup recovery key is distinct from the runtime key that protects SimpleFIN
+credentials. Whether the latter is separately backed up or included only in an
+encrypted backup needs design; recovery must not depend solely on Google access.
+Multiple connected destinations and Google OAuth configuration remain open.
+
+**Retention discussion:** The daily/seven-copy default applies to full local
+backups. If incremental backups are later supported, the owner suggested
+considering increasingly sparse tiers. Incremental retention, backup-size
+limits, and tier design are not yet decisions.
 
 ### CORE-025: Envelope Reallocation And Concurrent Spending
 
@@ -536,6 +673,44 @@ or remove its existing reservation. Show the deficit and the open reservation so
 the household can move money or cancel the request. Exact rules for modifying an
 approved request and how to resolve deficits across months remain open.
 
+### CORE-026: Web Approval Alerts
+
+**Owner direction, 2026-11-24:** The first WebUI prototype shows pending
+requests in an approval inbox with a visible indicator for the other member.
+Changes made by either member should appear in the other member's WebUI without
+a page reload when connected. Bank sync remains manually initiated. Email
+notifications and Android push are deferred. Reconnection, delivery, and refresh
+mechanics remain open.
+
+### CORE-027: Optional Cash Wallets
+
+**Owner direction, 2026-11-24:** Cash tracking is optional. The household may
+individually enable a shared cash wallet and a personal cash wallet for each
+adult; none is mandatory. Personal ownership identifies whose cash is held, not
+privacy: both adults can see and manage the wallets and their transactions.
+Each wallet can be on-budget or tracking-only, following CORE-016. A personal
+wallet does not automatically create a personal allowance or bypass purchase
+approval rules.
+
+Members may record cash purchases without a prior request, or optionally match
+one to an approved request under CORE-012. Unmatched spending is flagged when
+applicable under the household's rules. Moving cash between accounts or wallets
+is recorded as one reviewed transfer; a bank withdrawal can be linked after
+review rather than counted as a second purchase. An ATM fee is recorded
+separately from the transfer principal. The specific treatment of transfers
+across the on-budget/tracking-only boundary remains open.
+
+Members can compare a wallet's recorded balance with a physical count. When it
+differs, show the difference and require a member to confirm the adjustment and
+how it affects the budget. The adjustment's categorization and correction
+history need further design.
+
+**Transfer example for review:** A checking-account withdrawal totals $103:
+$100 cash and a $3 ATM fee. Link the bank withdrawal to a $100 transfer into the
+cash wallet and record the $3 fee as an expense. Do not record another $103 bank
+withdrawal or a second $3 bank charge. If both accounts are on-budget, the $100
+principal moves between them without creating income or spending.
+
 ## Dependencies
 
 Depends on the repository's security, testing, and delivery requirements in
@@ -549,10 +724,14 @@ These are proposed cases for discussion, not approved test obligations.
 
 - Given a household member without a valid Google-backed application session,
   household data is not returned.
-- Given a valid member, requests for another household's envelope, request,
-  account, or transaction do not reveal or mutate that data.
+- Given a valid member, requests using unknown or inaccessible envelope, request,
+  account, or transaction IDs do not reveal or mutate unrelated data.
+- Given an authenticated Google user who is not authorized by the operator to
+  create the server's household, sign-in alone does not permit household creation.
 - Given connected household accounts, only explicitly on-budget accounts
   contribute opening balances or budget-relevant transactions.
+- Given a new on-budget cash account after setup, its reviewed opening balance
+  becomes unassigned money and earlier transactions remain history-only.
 - Given a transaction before the budget start, it is history-only and does not
   reduce envelope availability.
 - Given an uncertain relationship between an opening balance and a transaction,
@@ -568,6 +747,9 @@ These are proposed cases for discussion, not approved test obligations.
   the reservation, record $45 of spending, and show the $5 variance.
 - Given an open $40 request reserved in a $100 envelope at month end, the next
   month retains $40 reserved and $60 available without creating new funds.
+- Given a $50 remaining envelope balance and an $80 open reservation at month
+  end, carry both forward, flag the $30 shortfall, and do not deduct that
+  reservation-driven shortfall again from next month's unassigned cash.
 - Given uncovered $10 cash overspending at month end, next month's unassigned
   cash is reduced by $10 without recording the purchase a second time.
 - Given a $30 card purchase with only $20 budgeted, the proposed card-payment
@@ -588,6 +770,13 @@ These are proposed cases for discussion, not approved test obligations.
   omit those credentials.
 - Given committed changes in SQLite's WAL, the documented backup and restore
   process retains those changes in a separate restored database.
+- Given a local backup and the necessary separately protected key material, an
+  authorized operator can restore with a local server command without Google or
+  internet access.
+- Given default backup settings, full local backups run daily and retain the
+  seven most recent successful copies; the operator can change both settings.
+- Given a scheduled backup fails, report the failure and preserve a previous
+  successful backup; exact retention is still to be decided.
 - Given a database backup without its encryption key, household records remain
   recoverable but encrypted bank credentials are not silently replaced or
   exposed; reconnecting may be required.
@@ -595,6 +784,9 @@ These are proposed cases for discussion, not approved test obligations.
   or none of them.
 - Given a pending or approved request that has not been matched, requester
   cancellation changes it to cancelled and releases all reservations once.
+- Given an approved request is edited and resubmitted before matching, its prior
+  reservation is released and the revised request awaits the other member's
+  decision.
 - Given a request with a confirmed transaction match, requester cancellation is
   not available; correction behavior remains open.
 - Given an invite link older than seven days or already accepted, it cannot be
@@ -611,23 +803,64 @@ These are proposed cases for discussion, not approved test obligations.
   retain the $80 reservation; available funds show a $30 deficit for review.
 - Given an imported transaction split, assigned shares sum to the transaction
   amount before it is considered reconciled.
+- Given a pending bank charge, show it separately without changing official
+  envelope balances or permitting a confirmed request match before posting.
+- Given a reviewed refund, return it to the original spending envelope and
+  adjust card-payment funds when applicable; partial-refund details remain open.
+- Given a household without SimpleFIN, members can create manual accounts with
+  opening balances, enter and correct manual transactions, and use CSV/OFX import.
+- Given cash tracking is not enabled, the household can use the prototype without
+  creating a cash wallet.
+- Given a personal cash wallet, both adults can see and manage it; its ownership
+  does not automatically grant a personal-allowance approval exception.
+- Given an on-budget cash wallet, its balance contributes to budget funds; a
+  tracking-only wallet does not.
+- Given a $103 bank withdrawal consisting of $100 cash and a $3 fee, linking
+  it records one $100 transfer and one $3 fee without a duplicate bank charge.
+- Given a cash purchase without a request, a member can record actual spending;
+  an approved request may instead be matched when applicable.
+- Given a physical cash count differs from the wallet balance, the system shows
+  the difference and waits for a member to confirm an adjustment and its budget
+  treatment.
+- Given a request awaiting review, the other member can see it in the WebUI
+  approval inbox and its indicator.
+- Given a household change while the other member's WebUI is connected, the
+  affected view updates without a page reload or an automatic bank sync.
 - Given a proposed transaction match, no request or balance changes until a
   household member confirms it.
 - Given a confirmed match, posted spending and released encumbrance do not
   double-count the purchase.
 - Given a request and transaction with different amounts, the variance is shown
   and requires member confirmation; posted spending uses the actual amount.
+- Given $100 in an envelope, an $80 approved reservation, and a confirmed $120
+  debit-card match, release the reservation, record $120 of spending, and show a
+  $20 deficit without altering or rejecting the bank charge.
+- Given an approved request split $60/$20 and a $100 matched transaction,
+  either member can confirm actual envelope shares of $70/$30 without another
+  partner approval; release the original reservations once.
+- Given cancellation and match confirmation race on one approved request, only
+  one succeeds, the reservation is released once, and the bank transaction is
+  retained whether matched or available for further review.
+- Given a repeated confirmation of the same transaction/request match, no
+  additional spending or reservation release is created.
+- Given an incorrect confirmed match, a member can undo it, retain the bank
+  transaction and correction history, and restore the request reservation; any
+  resulting deficit is flagged.
 - Given an imported transaction without a request match, a member can assign or
   split it across envelopes; actual spending posts and any resulting deficit is
   flagged rather than rejected.
 - Given a repeated provider sync or CSV/OFX import, an already-imported source
   transaction is not duplicated; exact identity rules remain open.
+- Given a possible duplicate that cannot be proven, retain it for member review
+  rather than silently discarding a potentially legitimate charge.
+- Given an account is added or its on-budget status changes after setup, require
+  explicit review without silently rewriting historical allocations or spending.
 - Given a self-hosted installation, no core feature requires a subscription,
   paid account, or project payment.
 - Given a user declines donations or paid optional services, self-hosted core
   features remain available.
 - Given a third-party bank or infrastructure charge, it is identified as an
-  external cost rather than a Household ERP software fee.
+  external cost rather than a Homestead-NG software fee.
 
 ## Decisions
 
@@ -680,7 +913,7 @@ These are proposed cases for discussion, not approved test obligations.
   `modernc.org/sqlite`; persist database state outside the container layer.
 - Scope revision, 2026-11-19: Bank import and transaction matching moved into
   the prototype baseline. CORE-005 is superseded by CORE-014; its ID is retained.
-- Owner direction, 2026-11-23: Household ERP is free-to-use FOSS. Donations and
+- Owner direction, 2026-11-23: Homestead-NG is free-to-use FOSS. Donations and
   sponsorships are welcome; future hosting or paid support remains optional and
   does not gate core self-hosted functionality.
 - Owner direction, 2026-11-24: Use YNAB-like budgeting as the default reference
@@ -688,7 +921,53 @@ These are proposed cases for discussion, not approved test obligations.
 - Owner direction, 2026-11-24: Unplanned spending that creates an envelope
   deficit does not cancel an approved request or remove its reservation; show
   the deficit for the household to resolve.
-- No detailed CORE requirement or API route in this draft is approved yet.
+- Owner direction, 2026-11-24: Either member can choose the actual envelope
+  split and confirm a transaction match even when it differs from the request.
+- Owner direction, 2026-11-24: Display pending charges separately; exclude them
+  from official envelope balances and confirmed request matches until posted.
+- Owner direction, 2026-11-24: Allow manual account setup and opening balances
+  without a SimpleFIN connection; retain CSV/OFX and SimpleFIN support.
+- Owner direction, 2026-11-24: Return reviewed refunds to their original
+  spending envelope and adjust card-payment funds when applicable.
+- Owner direction, 2026-11-24: A requester may edit and resubmit before matching;
+  a changed request needs a new partner decision and releases any old reservation.
+- Owner direction, 2026-11-24: Both adults share household data and management
+  access; private accounts and categories are deferred.
+- Owner direction, 2026-11-24: The WebUI has an approval inbox and indicator;
+  email notifications and Android push are deferred.
+- Owner correction, 2026-11-24: One server serves one household; multi-tenancy
+  is not planned. The operator controls household creation.
+- Owner direction, 2026-11-24: The prototype WebUI is desktop-first. Connected
+  members see each other's household changes without a page reload; bank sync
+  is still manual.
+- Owner direction, 2026-11-24: Approved requests remain reserved until matched
+  or cancelled; automatic expiry is outside the prototype.
+- Owner direction, 2026-11-24: Skip proven duplicate imports and hold ambiguous
+  possible duplicates for member review.
+- Owner direction, 2026-11-24: Permit reviewed account additions and budget-status
+  changes after setup without silently rewriting historical allocations or spend.
+- Owner direction, 2026-11-24: A new on-budget cash account's reviewed opening
+  balance becomes unassigned money; older transactions are history-only.
+- Owner direction, 2026-11-24: The operator authorizes household creation using
+  a single-use setup code after the creator signs in with Google.
+- Owner direction, 2026-11-24: Members may enter and correct manual transactions.
+- Owner direction, 2026-11-24: Members may undo incorrect matches, retain the
+  bank transaction and correction history, restore the reservation, and flag any
+  resulting deficit.
+- Owner direction, 2026-11-24: Full local backups default to daily with seven
+  successful copies; schedule and retention are configurable. Offline restore
+  uses a documented local server command.
+- Owner direction, 2026-11-24: Cash tracking is optional, with individually
+  enabled shared and adult-owned wallets visible to both members. Each wallet
+  can be on-budget or tracking-only.
+- Owner direction, 2026-11-24: Review cash transfers once, record cash purchases
+  with or without a request, and confirm physical-count adjustments.
+- Owner direction, 2026-11-24: Start with scheduled and manual local backups and
+  offline operator restore; defer Google Drive backup.
+- Future direction, 2026-11-24: Either adult may authorize optional Google Drive
+  backups; encrypt cloud backups and keep the recovery key separate.
+- No blanket approval of all detailed CORE requirements or API routes is implied;
+  explicit owner directions are recorded separately above.
 
 ## Verification
 
