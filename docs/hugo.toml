@@ -1,6 +1,6 @@
 baseURL = 'http://localhost:1313/'
 locale = 'en-us'
-title = 'Household ERP'
+title = 'Homestead-NG'
 disableKinds = ['taxonomy', 'term', 'RSS']
 
 [security]

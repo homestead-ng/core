@@ -120,7 +120,7 @@ jobs:
         run: |
           config=hugo.toml
           if [[ "$INCLUDE_CONTRACTS" = true ]]; then config=hugo.toml,hugo.contracts.toml; fi
-          hugo --source docs --config "$config" --minify --panicOnWarning --baseURL https://example.invalid/go-household-erp/
+          hugo --source docs --config "$config" --minify --panicOnWarning --baseURL https://example.invalid/core/
 
   contracts:
     if: inputs.contracts
@@ -153,14 +153,14 @@ jobs:
           context: .
           push: false
           load: true
-          tags: go-household-erp:ci
+          tags: homestead-ng-core:ci
           platforms: linux/amd64
       - name: Container smoke test
         run: |
-          docker run -d --name smoke --read-only --cap-drop ALL --security-opt no-new-privileges go-household-erp:ci
+          docker run -d --name smoke --read-only --cap-drop ALL --security-opt no-new-privileges homestead-ng-core:ci
           trap 'docker logs smoke; docker rm -f smoke' EXIT
           node scripts/container-smoke.mjs
-      - run: node scripts/scan-image.mjs go-household-erp:ci
+      - run: node scripts/scan-image.mjs homestead-ng-core:ci
 
   security:
     if: inputs.security

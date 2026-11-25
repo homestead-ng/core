@@ -1,10 +1,14 @@
-# Household ERP
+# Homestead-NG
 
 This repository is an early concept for a self-hosted household management
 system. The [product concept](docs/content/product-vision.html) is a rough
 starting point to refine, not an approved scope or roadmap. The repository
 currently contains a small Go web application foundation; its implementation
 choices are not yet product decisions.
+
+Homestead-NG will be free-to-use open-source software: no required
+subscription, paid account, or paywalled core feature. Donations and sponsors
+may support development; any future hosting or paid support remains optional.
 
 ## Start here
 
@@ -57,7 +61,7 @@ docs/             self-contained Hugo documentation site
 ```
 
 Keep application logic in focused `internal` packages as requirements emerge.
-No database, authentication, scheduler, or client-rendering framework is imposed.
+No database, authentication, or scheduler is implemented yet.
 Go owns business rules and escaped HTML; htmx owns server-driven updates; small
 JS modules own browser-local behavior. The greeting form demonstrates this and
 still works with JS disabled. See the [contract guide](docs/contracts/README.md).
@@ -125,17 +129,17 @@ to repositories created from a template.
 
 ## GitHub repository setup
 
-This project is hosted at `github.com/mstrhakr/go-household-erp`. Review the
+This project is hosted at `github.com/homestead-ng/core`. Review the
 public-repository security setup before applying it. Preview current settings:
 
 ```sh
-node scripts/setup-github.mjs --repo mstrhakr/go-household-erp
+node scripts/setup-github.mjs --repo homestead-ng/core
 ```
 
 Apply only after reviewing the script's proposed settings:
 
 ```sh
-node scripts/setup-github.mjs --repo mstrhakr/go-household-erp --apply
+node scripts/setup-github.mjs --repo homestead-ng/core --apply
 ```
 
 Publishing remains disabled. Do not add `--enable-publishing` until releases or

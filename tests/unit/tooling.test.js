@@ -98,6 +98,29 @@ test('custom attestations require the generic attest action', () => {
   assert.deepEqual(workflowErrors({ jobs: { attest: { steps: [step] } } }), []);
 });
 
+test('release workflows keep separate provenance and custom attestations', async () => {
+  for (const [filename, subject] of [['image.yml', 'subject-digest'], ['publish.yml', 'subject-checksums']]) {
+    const workflow = parse(await readFile(new URL(`../../.github/workflows/${filename}`, import.meta.url), 'utf8'));
+    const job = workflow.jobs.attest;
+    const steps = job.steps.filter(step => step.uses?.startsWith('actions/attest@'));
+    assert.equal(steps.length, 2);
+    assert.equal(steps[0].uses, 'actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d');
+    assert.ok(steps[0].with[subject]);
+    assert.equal(steps[0].with['predicate-type'], undefined);
+    assert.equal(steps[1].with[subject], steps[0].with[subject]);
+    assert.ok(steps[1].with['predicate-type']);
+    assert.ok(steps[1].with.predicate);
+    assert.equal(job.permissions['id-token'], 'write');
+    assert.equal(job.permissions.attestations, 'write');
+    if (filename === 'image.yml') {
+      assert.equal(steps[0].with['subject-name'], steps[1].with['subject-name']);
+      assert.equal(steps[0].with['push-to-registry'], true);
+      assert.equal(steps[1].with['push-to-registry'], true);
+      assert.equal(job.permissions.packages, 'write');
+    }
+  }
+});
+
 test('Dependabot groups minor and patch version and security updates per ecosystem, not majors', async () => {
   const config = parse(await readFile(new URL('../../.github/dependabot.yml', import.meta.url), 'utf8'));
   assert.deepEqual(config.updates.map(update => update['package-ecosystem']).sort(), ['docker', 'github-actions', 'gomod', 'npm']);

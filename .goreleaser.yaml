@@ -1,5 +1,5 @@
 version: 2
-project_name: go-household-erp
+project_name: homestead-ng-core
 builds:
   - id: server
     main: ./cmd/server

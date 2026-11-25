@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mstrhakr/go-household-erp/internal/config"
+	"github.com/homestead-ng/core/internal/config"
 )
 
 func TestCheckHealth(t *testing.T) {

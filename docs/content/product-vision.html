@@ -1,8 +1,8 @@
 +++
-title = 'Household ERP: Product Concept'
+title = 'Homestead-NG: Product Concept'
 weight = 10
 +++
-<h1>Household ERP</h1>
+<h1>Homestead-NG</h1>
 <p><strong>Working concept, for discussion.</strong> This is a rough starting
 point for exploring a self-hosted, shared workspace for the systems that keep a
 household running: money, purchasing, supplies, meals, maintenance, schedules,
@@ -19,6 +19,11 @@ is a final product scope, schedule, or implementation decision.</p>
     thoughtful request and approval path, while ordinary restocking stays easy.</li>
   <li><strong>Household ownership:</strong> Self-hosting and understandable data
     handling are early product values to examine.</li>
+  <li><strong>Free and open source:</strong> The software costs nothing to use;
+    no license fee, required subscription, paid account, or paywalled core
+    feature. Donations and sponsorships are welcome. Optional hosted service or
+    paid support may be considered later, without limiting the self-hosted
+    software. Third-party bank services and infrastructure may charge separately.</li>
   <li><strong>Useful at home and away:</strong> The Go backend and WebUI in
     this repository are the primary application. A native Android companion is
     a later client for quick interactions on the move.</li>
@@ -30,7 +35,8 @@ scope, combined, or reordered as the product becomes clearer.</p>
 <ol>
   <li><strong>Finance and budgeting:</strong> Give income and account balances
     purposes, plan for irregular expenses, and understand committed as well as
-    already-spent funds.</li>
+    already-spent funds. Optional shared and personal cash wallets can be tracked
+    alongside bank accounts.</li>
   <li><strong>Purchasing and approvals:</strong> Capture a purchase idea, apply
     household rules, request another member's decision when appropriate, and
     organize approved purchases for a shopping trip.</li>
@@ -44,6 +50,9 @@ scope, combined, or reordered as the product becomes clearer.</p>
     household projects, appointments, and recurring routines across members.</li>
   <li><strong>Records and continuity:</strong> Organize important documents,
     care information, and emergency procedures with appropriate privacy.</li>
+  <li><strong>People and relationships:</strong> Organize contacts, family and
+    friend relationships, birthdays, gift ideas, visits, and optional reminders
+    without making a contact a household account.</li>
 </ol>
 
 <h2>Example interactions</h2>
@@ -60,6 +69,72 @@ recorded or the request is closed.</p>
 <p>A scheduled maintenance task is completed and recorded against a household
 asset. Parts used could reduce tracked stock and prompt a restocking task when
 supplies run low.</p>
+
+<h2>Modular platform direction</h2>
+<p>The emerging design is a household platform with independently deployable
+modules. Core responsibilities under consideration include identity, household
+access, module discovery and shared infrastructure. Budgeting is a module, not a
+requirement for every installation: a future recipe-only household should not
+need to install it. Modules may declare required or optional dependencies and
+request narrowly scoped permissions. Exact APIs, data ownership, compatibility,
+and cross-module financial consistency still need contracts.</p>
+<p>The initial prototype is intended to publish Docker images and document
+networking, storage, and interconnection; operators manage their own Compose
+files or containers. A future managed mode could install modules when Core is
+explicitly granted Docker access, including in an optional VM appliance. Docker
+socket access grants powerful host-level authority and must not be given to
+modules. Managed installation, independent module repositories, a module
+template, signed catalogs, and external repositories remain to be designed.</p>
+<p>Core is envisioned as the home for identity, household access, module
+discovery, and shared infrastructure. Budgeting, procurement, recipes, and
+other capabilities could be separately distributed services with their own
+data. A module manifest could declare compatible versions, required or optional
+dependencies, and requested permissions. A recipe-only household should not
+need a financial module. Whether procurement requires budgeting is open.</p>
+<p>Proposed integration boundaries include versioned APIs, explicit permissions,
+and clear data ownership rather than shared database access. Financial changes
+need atomic ownership within their responsible service and defined recovery for
+cross-service failures. Installing, upgrading, disabling, and removing modules
+must be designed with dependencies, data preservation, backups, and offline use
+in mind. These details are not yet approved contracts.</p>
+<p>For distribution, explore trusted first-party and external module repositories
+with signed metadata and verified artifacts. PrintMaster's current update-trust
+work uses TUF and is a reference to investigate, not an implementation already
+adopted here. A signature establishes artifact trust under its key assumptions;
+it does not make third-party code safe. Modules must not receive Docker-socket
+or management credentials; their APIs still require authentication and
+authorization. A separately managed VM or explicit Core socket access would be
+an operator choice, not a prerequisite for the initial container deployment.</p>
+<p>Core is hosted at <a href="https://github.com/homestead-ng/core">homestead-ng/core</a>;
+separate repositories for individual modules are intended. A module template
+and shared API/SDK are possible starting points. The preferred domain is
+<code>homestead-ng.org</code>; registration is not confirmed here. The initial
+first-party modules are intended to be free. Future paid add-ons and
+activation support are ideas for discussion, not approved changes to the earlier
+free-to-use software direction. Optional hosting and support are separate ideas.
+Any pricing, licensing, or activation proposal needs an explicit owner decision.</p>
+
+<h2>People and relationships</h2>
+<p>An optional People and Relationships module could help households remember
+and coordinate without treating relationships as sales leads. Possible features
+include shared contacts and relationship context; birthdays and anniversaries;
+gift ideas, preferences, and visit notes; and optional reminders to reach out or
+plan a get-together. Import and export in standard contact formats could come
+first, with contact sync considered later.</p>
+<p>Optional integrations could link people to Calendar, Recipes, or Procurement,
+but those modules should not be required for a basic contact list. A contact is
+not automatically a household user. Whether individual notes can be private,
+how sharing and deletion work, and how sensitive contact information is
+protected remain open questions.</p>
+
+<h2>Community ideas to explore</h2>
+<p>A <a href="https://www.reddit.com/r/daddit/comments/1iuw6z5/erp_for_the_home_family_task_management_apps/">household-management discussion</a>
+highlighted fragmented calendars, lists, messages, and notes. Ideas raised there
+include a shared calendar compatible with Google Calendar, read-only calendar
+sharing, organized shopping lists with favorites and timely updates, task
+deadlines and delivery status, shared notes with links, household contacts, and
+recipe-to-grocery workflows. These are potential module ideas, not commitments.
+Contact and family information would need careful privacy and access decisions.</p>
 
 <h2>One possible way to group the work</h2>
 <p>This is a conversation aid, not a roadmap or commitment about sequence.</p>
@@ -88,15 +163,18 @@ backend and primary WebUI. The Android companion will live in a separate
 repository after the API contract is sufficiently defined and a usable main-app
 prototype is available to develop against. This establishes client and repo
 sequencing; it does not approve the domain scope or feature behavior.</p>
+<p><strong>Owner direction, 2026-11-24:</strong> One self-hosted server serves
+one household; multi-tenancy is not planned. The prototype WebUI is desktop-first;
+the Android companion remains a separate later client.</p>
 <p><strong>Owner direction, 2026-11-19:</strong> The first prototype should
-explore a two-adult household, envelopes and allocation, purchase requests,
+explore a two-adult household using USD, envelopes and allocation, purchase requests,
 approval or rejection by the other member, and reserved funds. Google OIDC is
 the chosen sign-in direction. SimpleFIN Bridge plus CSV/OFX import are the
 initial bank-data direction; Plaid is a later option. Imported transactions can
 be split across envelopes, with suggested purchase-request matches requiring
 member confirmation.</p>
-<p>Details remain open: data model, currency, exact OIDC/session flow, account
-connection ownership and cost, request lifecycle, transaction edge cases, and
-API routes and payloads. The draft <code>CORE</code> contract records owner
+<p>Details remain open: data model, exact OIDC/session flow, account connection
+setup, request lifecycle edge cases, transaction corrections, and API routes and
+payloads. The draft <code>CORE</code> contract records owner
 choices and candidate behavior for review; its proposed requirements are not
 blanket approval for implementation.</p>
